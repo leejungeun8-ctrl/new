@@ -1,0 +1,5 @@
+{
+  "name": "Lesson 입사지원-Phase 7 관리자화면- 완성",
+  "description": "Firebase를 활용한 입사지원서 제출 및 관리 플랫폼입니다. 일반 회원의 서류 제출 기능과 관리자의 회원 및 지원서 관리 기능을 제공합니다.",
+  "requestFramePermissions": []
+}
