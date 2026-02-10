@@ -51,33 +51,38 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userProfile }) => {
     { "group": "선박승무", "options": ["선박 운항 및 기관 담당", "고객안내 및 승무서비스"] }
   ];
 
+  // 컴포넌트 마운트 시 및 로컬스토리지 변화 감지
   useEffect(() => {
     const consentStatus = localStorage.getItem('privacy_consent_status');
     if (consentStatus === 'true') {
       setIsPrivacyAgreed(true);
     }
+    // 페이지를 떠날 때 동의 상태 초기화 (옵션)
     return () => {
       localStorage.removeItem('privacy_consent_status');
       localStorage.removeItem('temp_apply_name');
     };
   }, []);
 
+  // Firestore 1MB 제한을 피하기 위한 이미지 압축 함수
   const compressImage = (base64Str: string): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 300;
+        const MAX_WIDTH = 300; // 가로 300px로 축소
         const scaleSize = MAX_WIDTH / img.width;
         canvas.width = MAX_WIDTH;
         canvas.height = img.height * scaleSize;
+
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           resolve(base64Str);
           return;
         }
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // JPEG 0.7 퀄리티로 압축 (용량 대폭 감소)
         resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
       img.onerror = () => resolve(base64Str);
@@ -101,6 +106,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userProfile }) => {
       alert('주소 검색 서비스를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
       return;
     }
+
     new (window as any).daum.Postcode({
       oncomplete: (data: any) => {
         let fullAddr = data.roadAddress;
@@ -121,12 +127,6 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userProfile }) => {
     const newEdu = [...education];
     (newEdu[index] as any)[field] = value;
     setEducation(newEdu);
-  };
-
-  const updateExperience = (index: number, field: keyof ExperienceEntry, value: string) => {
-    const newExp = [...experience];
-    (newExp[index] as any)[field] = value;
-    setExperience(newExp);
   };
 
   const generateDummyData = async () => {
@@ -153,12 +153,6 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userProfile }) => {
       { admissionYear: '2015-03-02', graduationYear: '2019-02-15', schoolMajor: '한국대학교 경영학과', certificates: 'TOEIC 900점' },
       { admissionYear: '2012-03-02', graduationYear: '2015-02-10', schoolMajor: '서울고등학교', certificates: '컴퓨터활용능력 1급' },
       { admissionYear: '', graduationYear: '', schoolMajor: '', certificates: '' },
-    ]);
-
-    setExperience([
-      { period: '2019-03 ~ 2022-05', companyDept: '나미테크 기술팀', duties: '프론트엔드 개발' },
-      { period: '2018-01 ~ 2018-02', companyDept: '한국은행 인턴', duties: '문서 관리 및 지원' },
-      { period: '', companyDept: '', duties: '' }
     ]);
 
     setIsGeneratingPhoto(true);
@@ -194,6 +188,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userProfile }) => {
   };
 
   const handleOpenPrivacy = () => {
+    // 동의서 페이지에서 사용할 이름을 임시 저장
     localStorage.setItem('temp_apply_name', userName);
     navigate('/privacy-consent');
   };
@@ -250,6 +245,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userProfile }) => {
   return (
     <div className="max-w-5xl mx-auto mb-20">
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Header Section */}
         <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
           <div className="absolute top-4 right-4">
@@ -271,6 +267,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userProfile }) => {
           <p className="text-slate-500">나미나라공화국 남이섬과 함께할 인재를 기다립니다.</p>
         </div>
 
+        {/* Section 1: Personal Info & Photo */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center">
@@ -352,63 +349,40 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userProfile }) => {
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-10">
-          <div className="space-y-6">
-            <h3 className="text-lg font-bold text-slate-900 border-l-4 border-emerald-500 pl-3">학력 사항</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-slate-400 font-black uppercase text-[10px] tracking-widest text-left">
-                    <th className="pb-3 pr-2">입학년도</th>
-                    <th className="pb-3 px-2">졸업년도</th>
-                    <th className="pb-3 px-2 w-1/2">학교/전공</th>
-                    <th className="pb-3 pl-2">비고</th>
+        {/* Section 2: Education & Experience */}
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+          <h3 className="text-lg font-bold text-slate-900 border-l-4 border-emerald-500 pl-3">학력 및 경력 사항</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-slate-400 font-black uppercase text-[10px] tracking-widest text-left">
+                  <th className="pb-3 pr-2">입학년도</th>
+                  <th className="pb-3 px-2">졸업년도</th>
+                  <th className="pb-3 px-2 w-1/2">학교/전공</th>
+                  <th className="pb-3 pl-2">비고</th>
+                </tr>
+              </thead>
+              <tbody>
+                {education.map((edu, idx) => (
+                  <tr key={idx}>
+                    <td className="py-1 pr-1"><input type="date" value={edu.admissionYear} onChange={e => updateEducation(idx, 'admissionYear', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" /></td>
+                    <td className="py-1 px-1"><input type="date" value={edu.graduationYear} onChange={e => updateEducation(idx, 'graduationYear', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" /></td>
+                    <td className="py-1 px-1"><input type="text" value={edu.schoolMajor} onChange={e => updateEducation(idx, 'schoolMajor', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" placeholder="학교/전공" /></td>
+                    <td className="py-1 pl-1"><input type="text" value={edu.certificates} onChange={e => updateEducation(idx, 'certificates', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" placeholder="자격증 등" /></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {education.map((edu, idx) => (
-                    <tr key={idx}>
-                      <td className="py-1 pr-1"><input type="date" value={edu.admissionYear} onChange={e => updateEducation(idx, 'admissionYear', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" /></td>
-                      <td className="py-1 px-1"><input type="date" value={edu.graduationYear} onChange={e => updateEducation(idx, 'graduationYear', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" /></td>
-                      <td className="py-1 px-1"><input type="text" value={edu.schoolMajor} onChange={e => updateEducation(idx, 'schoolMajor', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" placeholder="학교/전공" /></td>
-                      <td className="py-1 pl-1"><input type="text" value={edu.certificates} onChange={e => updateEducation(idx, 'certificates', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" placeholder="자격증 등" /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <h3 className="text-lg font-bold text-slate-900 border-l-4 border-blue-500 pl-3">경력 사항</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-slate-400 font-black uppercase text-[10px] tracking-widest text-left">
-                    <th className="pb-3 pr-2 w-1/4">근무기간</th>
-                    <th className="pb-3 px-2 w-1/4">직장명/부서</th>
-                    <th className="pb-3 pl-2 w-1/2">주요업무</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {experience.map((exp, idx) => (
-                    <tr key={idx}>
-                      <td className="py-1 pr-1"><input type="text" value={exp.period} onChange={e => updateExperience(idx, 'period', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" placeholder="예: 2020.01~2022.12" /></td>
-                      <td className="py-1 px-1"><input type="text" value={exp.companyDept} onChange={e => updateExperience(idx, 'companyDept', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" placeholder="직장/부서명" /></td>
-                      <td className="py-1 pl-1"><input type="text" value={exp.duties} onChange={e => updateExperience(idx, 'duties', e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg" placeholder="담당 업무 기술" /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
+        {/* Section 4: Self-Introduction */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
           <h3 className="text-lg font-bold text-slate-900 border-l-4 border-purple-600 pl-3">자기 소개</h3>
           <textarea required value={selfIntro} onChange={e => setSelfIntro(e.target.value)} className="w-full min-h-[250px] p-6 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition text-sm leading-loose" placeholder="자신의 경험과 가치관을 구체적으로 서술해 주세요." />
         </div>
 
+        {/* Section 5: 지원분야 선택 */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-8">
           <div className="flex items-center gap-3 border-l-4 border-purple-600 pl-3">
             <h3 className="text-lg font-bold text-slate-900">지원 분야</h3>
@@ -474,6 +448,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userProfile }) => {
           </div>
         </div>
 
+        {/* Privacy Consent Section */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 border-l-8 border-indigo-600">
           <div>
             <h3 className="text-xl font-black text-slate-900 mb-1">개인정보 수집 및 이용 동의</h3>
@@ -502,6 +477,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userProfile }) => {
           </button>
         </div>
 
+        {/* Footer Confirmation */}
         <div className="bg-slate-900 rounded-3xl p-10 text-center text-white shadow-xl">
           <p className="text-slate-400 mb-6 font-medium">위의 내용이 틀림이 없음을 확인합니다.</p>
           <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-10">

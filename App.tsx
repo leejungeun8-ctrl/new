@@ -9,6 +9,7 @@ import { UserProfile, UserRole } from './types';
 // Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ApplicationForm from './pages/ApplicationForm';
@@ -28,10 +29,18 @@ const App: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        const docRef = doc(db, COL_USERS, currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setUserProfile(docSnap.data() as UserProfile);
+        try {
+          const docRef = doc(db, COL_USERS, currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setUserProfile(docSnap.data() as UserProfile);
+          } else {
+            console.warn("User profile not found in Firestore for authenticated user.");
+            setUserProfile(null);
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+          setUserProfile(null);
         }
       } else {
         setUserProfile(null);
@@ -50,15 +59,15 @@ const App: React.FC = () => {
         <Navbar userProfile={userProfile} />
         <main className="container mx-auto px-4 py-8">
           <Routes>
-            <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" />} />
-            <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/" />} />
-            
             <Route path="/" element={
               user ? (
                 userProfile?.role === UserRole.ADMIN ? <AdminDashboard /> : <Dashboard userProfile={userProfile} />
-              ) : <Navigate to="/login" />
+              ) : <LandingPage />
             } />
 
+            <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" />} />
+            <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/" />} />
+            
             <Route path="/apply" element={
               user && userProfile?.role === UserRole.USER ? <ApplicationForm userProfile={userProfile} /> : <Navigate to="/" />
             } />

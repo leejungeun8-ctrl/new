@@ -73,7 +73,7 @@ const AdminDashboard: React.FC = () => {
 
   // Selection Handlers
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredApps.length && filteredApps.length > 0) {
+    if (selectedIds.size === filteredApps.length) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(filteredApps.map(app => app.id!)));
@@ -81,7 +81,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const toggleSelect = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // 행 클릭 이벤트(상세보기) 방지
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
       newSelected.delete(id);
@@ -108,19 +108,18 @@ const AdminDashboard: React.FC = () => {
       '주소': `${app.address} ${app.detailAddress}`,
       '지원분야': app.desiredField,
       '희망급여(만원)': app.expectedSalary,
-      '학력 사항': (app.education || []).map(e => `${e.admissionYear}~${e.graduationYear} ${e.schoolMajor} [${e.certificates || '없음'}]`).join('\n'),
-      '경력 사항': (app.experience || []).map(e => `${e.period} ${e.companyDept} : ${e.duties}`).join('\n'),
-      '자기소개서': app.selfIntro,
+      '자기소개서': app.selfIntro, // 추가된 항목
       '상태': app.status === 'pending' ? '심사중' : 
              app.status === 'reviewed' ? '검토완료' :
              app.status === 'accepted' ? '합격' : '불합격',
-      '사진URL': app.photoUrl || '',
       '제출일': new Date(app.createdAt).toLocaleString()
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "지원서_목록");
+    
+    // 파일명 생성: 지원서_목록_2024-01-01.xlsx
     const fileName = `지원서_목록_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   };
@@ -129,6 +128,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto pb-20">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">인사 관리 시스템</h1>
@@ -153,6 +153,7 @@ const AdminDashboard: React.FC = () => {
 
       {activeTab === 'applications' && (
         <>
+          {/* Stats Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden relative group">
               <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
@@ -179,7 +180,9 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Table Area */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Filter & Action Bar */}
               <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
                 <div className="relative flex-1 w-full">
                   <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -219,6 +222,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
+              {/* Table */}
               <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
@@ -255,7 +259,7 @@ const AdminDashboard: React.FC = () => {
                                 type="checkbox" 
                                 checked={selectedIds.has(app.id!)}
                                 onClick={(e) => toggleSelect(app.id!, e)}
-                                onChange={() => {}} 
+                                onChange={() => {}} // dummy to avoid warning
                                 className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
                               />
                             </td>
@@ -302,6 +306,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
+            {/* Details Area */}
             <div className="lg:col-span-1">
               {selectedApp ? (
                 <div className="bg-white rounded-[2rem] border border-slate-200 shadow-2xl overflow-hidden sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
@@ -327,6 +332,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   
                   <div className="p-8 space-y-8">
+                    {/* Status Management */}
                     <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                       <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">심사 단계 업데이트</h4>
                       <div className="grid grid-cols-2 gap-3">
@@ -367,29 +373,6 @@ const AdminDashboard: React.FC = () => {
                       <p className="text-xs font-bold text-indigo-600 mt-1">{selectedApp.detailAddress}</p>
                     </div>
 
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">학력 사항</h4>
-                        <div className="space-y-1">
-                          {(selectedApp.education || []).map((edu, i) => (
-                            <div key={i} className="text-xs font-medium text-slate-700 border-l-2 border-emerald-500 pl-2">
-                              {edu.admissionYear}~{edu.graduationYear} {edu.schoolMajor} ({edu.certificates || '없음'})
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">경력 사항</h4>
-                        <div className="space-y-1">
-                          {(selectedApp.experience || []).map((exp, i) => (
-                            <div key={i} className="text-xs font-medium text-slate-700 border-l-2 border-blue-500 pl-2">
-                              {exp.period} {exp.companyDept} : {exp.duties}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
                     <div>
                       <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -401,12 +384,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
 
                     <div className="flex gap-4">
-                      <button 
-                        onClick={() => handleUpdateStatus(selectedApp.id!, 'accepted')}
-                        className="flex-1 bg-slate-900 text-white py-4 rounded-2xl text-sm font-black hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
-                      >
-                        심사 결과 확정 (합격)
-                      </button>
+                      <button className="flex-1 bg-slate-900 text-white py-4 rounded-2xl text-sm font-black hover:bg-slate-800 transition-all shadow-xl shadow-slate-200">심사 결과 확정</button>
                     </div>
                   </div>
                 </div>
